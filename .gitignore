@@ -1,0 +1,14 @@
+*.o
+*.a
+*.so
+
+*creator.user*
+*.autosave
+CMakeLists.txt.user*
+*build-*
+*.qm
+/.qmake.cache
+/.qmake.stash
+*.pro.user
+*.pro.user.*
+
