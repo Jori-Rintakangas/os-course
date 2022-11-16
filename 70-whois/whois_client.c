@@ -4,13 +4,17 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <stdlib.h>
 
 #define PORT 43
 
-char* server = "whois.ficora.fi";
+char *server = "whois.ficora.fi";
 
-char response[1024];
+char response_buf[100];
+char *response;
 struct sockaddr_in server_addr;
+int bytes;
+int total_bytes = 0;
 
 int main(int argc, char const* argv[])
 {
@@ -47,18 +51,40 @@ int main(int argc, char const* argv[])
     if (bytes_sent < 0)
     {
 		printf("Sending request data failed\n");
-        close(connection);
+		close(connection);
 		return -1;
 	}
 
-	int r = read(client_socket, response, 2000);
-    if (r < 0) 
-    {
-		printf("Reading response data failed\n");
-        close(connection);
+	response = (char*)malloc(sizeof(char)* (100 + 1));
+	if (response == NULL)
+	{
+		printf("Memory allocation for response failed\n");
 		return -1;
 	}
-	printf("%s\n", response);
+
+	while (bytes = read(client_socket, response_buf, sizeof(response_buf)))
+	{
+		if (bytes < 0)
+		{
+			printf("Reading response data failed\n");
+        	close(connection);
+			return -1;
+		}
+
+		response = realloc(response, bytes + total_bytes);
+		if (response == NULL)
+		{
+			printf("Memory allocation for response failed\n");
+			return -1;
+		}
+
+		memcpy(response + total_bytes, response_buf, bytes);
+		total_bytes += bytes;
+	}
+	printf("%s", response);
+	printf("\n");
+
+	free(response);
 
 	close(connection);
 	return 0;
