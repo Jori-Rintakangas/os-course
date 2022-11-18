@@ -7,22 +7,48 @@
 #include <stdlib.h>
 
 #define PORT 43
+#define BUF_SIZE 10
 
-char *server = "whois.ficora.fi";
-
-char response_buf[100];
-char *response;
+char* server = "whois.ficora.fi";
 struct sockaddr_in server_addr;
-int bytes;
-int total_bytes = 0;
+
+int print_response(int client_socket)
+{
+	char response_buf[BUF_SIZE];
+	int bytes = 0;
+	while (bytes = read(client_socket, response_buf, sizeof(response_buf) - 1))
+	{
+		if (bytes < 0)
+		{
+			printf("Reading response data failed\n");
+			return 0;
+		}
+		response_buf[bytes] = '\0';
+		printf("%s", response_buf);
+	}
+	return 1;
+}
+
+void init_server_info()
+{
+	char ip[INET_ADDRSTRLEN];
+	struct hostent* server_info = gethostbyname(server);
+	// Get whois.ficora.fi server ip address and store it to ip
+	inet_ntop(server_info->h_addrtype, server_info->h_addr_list[0], ip, sizeof(ip));
+
+	// Storing internet address info to socket struct
+	inet_pton(AF_INET, ip, &server_addr.sin_addr);
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_port = htons(PORT);
+}
 
 int main(int argc, char const* argv[])
 {
-    struct hostent *server_info = gethostbyname(server);
-	const char* target = argv[1];
-
-	char ip[INET_ADDRSTRLEN];
-	inet_ntop(server_info->h_addrtype, server_info->h_addr_list[0], ip, sizeof(ip));
+	if (argc != 2)
+	{
+		printf("Usage: ./whois <domain>\n");
+		return 1;
+	}
 
     int client_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (client_socket < 0)
@@ -31,61 +57,33 @@ int main(int argc, char const* argv[])
 		return -1;
 	}
 
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(PORT);
-
-	if (inet_pton(AF_INET, ip, &server_addr.sin_addr) <= 0)
-    {
-		printf("Invalid address\n");
-		return -1;
-	}
+	init_server_info();
 
     int connection = connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
 	if (connection != 0)
     {
 		printf("Connection failed\n");
+		close(client_socket);
 		return -1;
 	}
 
-	int bytes_sent = send(client_socket, target, strlen(target), 0);
-    if (bytes_sent < 0)
+	const char* domain = argv[1];
+    if (send(client_socket, domain, strlen(domain), 0) < 0)
     {
-		printf("Sending request data failed\n");
+		printf("Sending request failed\n");
 		close(connection);
+		close(client_socket);
 		return -1;
 	}
 
-	response = (char*)malloc(sizeof(char)* (100 + 1));
-	if (response == NULL)
+	if (!print_response(client_socket))
 	{
-		printf("Memory allocation for response failed\n");
+		close(connection);
+		close(client_socket);
 		return -1;
 	}
-
-	while (bytes = read(client_socket, response_buf, sizeof(response_buf)))
-	{
-		if (bytes < 0)
-		{
-			printf("Reading response data failed\n");
-        	close(connection);
-			return -1;
-		}
-
-		response = realloc(response, bytes + total_bytes);
-		if (response == NULL)
-		{
-			printf("Memory allocation for response failed\n");
-			return -1;
-		}
-
-		memcpy(response + total_bytes, response_buf, bytes);
-		total_bytes += bytes;
-	}
-	printf("%s", response);
-	printf("\n");
-
-	free(response);
 
 	close(connection);
+	close(client_socket);
 	return 0;
 }
