@@ -9,7 +9,7 @@
 int find_program(char** parsed_line)
 {
 	char cwd[1024];
-    getcwd(cwd, sizeof(cwd));
+	getcwd(cwd, sizeof(cwd));
 
 	char* path = getenv("PATH");
 	char temp[strlen(path) + 1];
@@ -67,7 +67,12 @@ char** parse_line(char* line)
 }
 
 int main(int argc, char* argv[])
-{	
+{
+	printf("******************************************************************\n");
+	printf("* This is a simple shell that executes programs found from PATH. *\n");
+	printf("* Running a program in the background and piping not supported.  *\n");
+	printf("* Enter q to exit shell.                                         *\n");
+	printf("******************************************************************\n");
 	int bytes_read;
 	size_t size = 20;
 	char* line = NULL;
