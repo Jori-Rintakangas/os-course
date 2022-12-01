@@ -7,11 +7,12 @@
 #include <netdb.h>
 #include <stdlib.h>
 
-#define PORT 43 /* whois servers listen on port 43 */
+#define PORT 43 /* whois servers listen on TCP port 43 */
 #define BUF_SIZE 1024
 
 char* server = "whois.ficora.fi";
 struct sockaddr_in server_addr;
+
 
 /* print_response() prints the response from the socket file descriptor */
 int print_response(int client_socket)
@@ -79,24 +80,29 @@ int main(int argc, char const* argv[])
 		return -1;
 	}
 
-	const char* query = argv[1];
-	/* Sending a query request specified by a user */
+	/* Appending <CR><LF> to the end of request string specified by user.
+	The whois protocol (RFC3912) specifies that the query string ends with <CR><LF> */
+	char* query = malloc(strlen(argv[1]) + 3);
+	strcpy(query, argv[1]);
+	strcat(query, "\r\n");
+
+	/* Sending a query message to the file descriptor socket */
 	if (send(client_socket, query, strlen(query), 0) < 0)
 	{
 		printf("Sending request failed\n");
-		close(connection);
 		close(client_socket);
+		free(query);
 		return -1;
 	}
 
 	if (!print_response(client_socket))
 	{
-		close(connection);
 		close(client_socket);
+		free(query);
 		return -1;
 	}
 
-	close(connection);
 	close(client_socket);
+	free(query);
 	return 0;
 }
