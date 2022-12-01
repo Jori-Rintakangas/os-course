@@ -6,18 +6,23 @@
 #include <sys/wait.h>
 
 
+/* find_program() is used to find out if the program that a user
+wants to execute exists in PATH */
 int find_program(char** parsed_line)
 {
 	char cwd[1024];
 	getcwd(cwd, sizeof(cwd));
 
 	char* path = getenv("PATH");
+	/* We need to copy path to another array since strtok() modifies the
+	array it handles and it would modify the PATH. */
 	char temp[strlen(path) + 1];
 	strcpy(temp, path);
 
    	char* part = strtok(temp, ":");
    	while (part != NULL)
 	{
+		/* Checking if the file exists in one of the directory that is in PATH */
 		chdir(part);
 		if (access(parsed_line[0], F_OK) == 0)
 		{
@@ -31,6 +36,9 @@ int find_program(char** parsed_line)
 	return 0;
 }
 
+/* parse_line() is used to parse the parts from user input to an array
+of pointers that can be then used by execvp(). Dynamic memory allocation
+is used since there is no way to know the length of the user input. */
 char** parse_line(char* line)
 {
 	char** parsed_line = NULL;
@@ -52,7 +60,8 @@ char** parse_line(char* line)
 		part = strtok(NULL, " ");
 		part_count++;
    	}
-
+	/* One more allocation because execvp() requires the array of pointers
+	passed to it to be terminated by NULL pointer */
 	temp = realloc(parsed_line, sizeof(char*) * part_count);
 	if (parsed_line == NULL)
 	{
@@ -62,10 +71,13 @@ char** parse_line(char* line)
 		exit(-1);
 	}
 	parsed_line = temp;
-	parsed_line[part_count - 1] = '\0';
+	parsed_line[part_count - 1] = NULL;
 	return parsed_line;
 }
 
+/* main() function continuously asks command input from a user
+and it uses fork() to create a child process that will be replaced
+by the program specified in the user input. */
 int main(int argc, char* argv[])
 {
 	printf("******************************************************************\n");
@@ -85,7 +97,10 @@ int main(int argc, char* argv[])
 		{
 			continue;
 		}
-		line[bytes_read - 1] = '\0';
+		line[bytes_read - 1] = '\0'; /* Removing the newline from command */
+
+		/*parse_line() uses dynamic memory allocation so parsed_line will be
+		freed later before it can be assigned a new value*/
 		parsed_line = parse_line(line);
 		if (strcmp(parsed_line[0], "q") == 0)
 		{
@@ -98,6 +113,7 @@ int main(int argc, char* argv[])
 			continue;
 		}
 
+		/* Creating a child process from the current process using fork() */
 		pid_t pid = fork();
 		if (pid == -1)
 		{
@@ -107,7 +123,10 @@ int main(int argc, char* argv[])
 		}
 		else if (pid == 0)
 		{
+			/* fork() returns 0 when we are the child process. Here we use execvp()
+			to replace the child process with the program that user wants to execute. */
 			execvp(parsed_line[0], parsed_line);
+			/* execvp() doesn't return, it only comes here if it fails */
 			printf("execvp() failed\n");
 			free(parsed_line);
 			free(line);
@@ -116,6 +135,8 @@ int main(int argc, char* argv[])
 		else
 		{
 			int status;
+			/* fork() returns the child process pid when we are the parent process.
+			Here we use waitpid() to wait until child process is finished. */
 			waitpid(pid, &status, 0);
 			free(parsed_line);
 		}
