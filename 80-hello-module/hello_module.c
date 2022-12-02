@@ -1,16 +1,37 @@
+/* This loadable kernel module creates a directory /hello under /proc directory
+and hello contains a file greeting which has "Hello World!" as its content.
+Once the module is loaded, the file greeting can be read from the use space
+applications. For example from command line: cat /proc/hello/greeting outputs
+"Hello World!" or the file content can be read from c appliation that opens
+and creates FILE pointer to the greeting file and uses fgets() to read bytes
+from the FILE pointer. */
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/proc_fs.h>
 #include <linux/fs.h>
 
+#define MSG_SIZE 14 
+char greeting_msg[MSG_SIZE] = "Hello World!\n";
+
 static struct proc_dir_entry *proc_dir;
-char greeting_msg[13] = "Hello World!\n";
+
 
 /* This function will be invoked when we read the greeting file from the user space. */
 static ssize_t read_proc_file(struct file *file, char __user *buffer, size_t size, loff_t *offset)
 {
-	return simple_read_from_buffer(buffer, size, offset, greeting_msg, 13);
+	/* simple_read_from_buffer() uses copy_to_user() to copy data from the kernel space to the
+	user space. buffer is the user space array where the data will be written to, size is the
+	amount of bytes requested from the user space, offset is the file position, greeting_msg
+	buffer contains the data to write to the user buffer and MSG_SIZE is the size of that buffer. */
+	ssize_t bytes_read = simple_read_from_buffer(buffer, size, offset, greeting_msg, MSG_SIZE);
+	if (bytes_read < 0)
+	{
+		printk(KERN_ERR "Reading from greeting file failed.\n");
+		return -1;
+	}
+	return bytes_read;
 }
 
 /* We create a file that can only be read so only reading operation is needed.
@@ -27,7 +48,7 @@ static int __init hello_init(void)
 	
 	if (proc_dir == NULL)
 	{
-		printk(KERN_ERR "Creating proc entry failed\n");
+		printk(KERN_ERR "Creating proc entry failed.\n");
 		return -1;
 	}
 
@@ -35,7 +56,7 @@ static int __init hello_init(void)
 	We set only reading permissions and specify file operations with
 	proc_file_operations struct */
 	proc_create("greeting", 0444, proc_dir, &proc_file_operations);
-	printk(KERN_INFO "proc entry: /hello/greeting created\n");
+	printk(KERN_INFO "proc entry: /hello/greeting created.\n");
 	return 0;
 }
 
@@ -43,7 +64,7 @@ static int __init hello_init(void)
 static void __exit hello_exit(void)
 {
 	proc_remove(proc_dir);
-	printk(KERN_INFO "proc entry: /hello/greeting removed\n");
+	printk(KERN_INFO "proc entry: /hello/greeting removed.\n");
 }
 
 /* Registering module init and exit functions. */
