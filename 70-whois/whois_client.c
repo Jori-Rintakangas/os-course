@@ -1,3 +1,12 @@
+/* This is a whois client program that can be used to find information of
+a specific domain or a website. Whois protocol is specified in RFC3912 standard
+and it is very simple: First we open a TCP connection to the whois server
+listening on port 43. Then we send a query string that contains the domain
+or a website name we are interested in, appended with <CR><LF>. The whois server
+will then respond with the information related to the query string if the domain
+or website is found. This client uses whois.ficora.fi as whois server.
+*/
+
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>

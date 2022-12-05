@@ -1,10 +1,10 @@
 /* This loadable kernel module creates a directory /hello under /proc directory
 and hello contains a file greeting which has "Hello World!" as its content.
-Once the module is loaded, the file greeting can be read from the use space
-applications. For example from command line: cat /proc/hello/greeting outputs
-"Hello World!" or the file content can be read from c appliation that opens
-and creates FILE pointer to the greeting file and uses fgets() to read bytes
-from the FILE pointer. */
+Once the module is loaded, the file greeting can be read from the user space
+applications.
+The module has been tested by reading the file greeting with cat, head, tail,
+more, and less commands and also with c application that opens and creates FILE
+pointer to the greeting file and uses fgets() to read bytes from the FILE pointer. */
 
 #include <linux/module.h>
 #include <linux/kernel.h>

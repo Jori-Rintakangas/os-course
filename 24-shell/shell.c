@@ -1,3 +1,9 @@
+/* This is a simple shell program that can be used to run programs
+that are found from PATH environment variable. The program uses fork()
+to crete a duplicate of itself and that duplicate process will be replaced
+with an execution of a program that we want to run using exec().
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
