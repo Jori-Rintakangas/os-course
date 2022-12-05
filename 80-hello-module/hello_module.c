@@ -12,7 +12,7 @@ from the FILE pointer. */
 #include <linux/proc_fs.h>
 #include <linux/fs.h>
 
-#define MSG_SIZE 14 
+#define MSG_SIZE 13
 char greeting_msg[MSG_SIZE] = "Hello World!\n";
 
 static struct proc_dir_entry *proc_dir;
@@ -35,9 +35,12 @@ static ssize_t read_proc_file(struct file *file, char __user *buffer, size_t siz
 }
 
 /* We create a file that can only be read so only reading operation is needed.
-This struct will map the readings of the greeting file into the read_proc_file() function. */
+In addition, we also set seek operation to be not allowed so that a separate seek function
+implementation is not needed. This struct will map the readings of the greeting file into
+the read_proc_file() function. */
 static struct proc_ops proc_file_operations = {
         .proc_read = read_proc_file,
+		.proc_lseek = no_llseek,
 };
 
 /* This will be invoked when the module is loaded. */
